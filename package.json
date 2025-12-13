@@ -1,17 +1,18 @@
 {
   "name": "n-diary",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "N年日記 - 指定した日付からN年前までの日記を表示・編集できるWebアプリ",
+  "main": "server/index.js",
   "scripts": {
+    "start": "node server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "minaraihrr",
+  "license": "UNLICENSED",
+  "type": "module",
   "dependencies": {
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "pg": "^8.16.3"
-  },
-  "type": "module"
+  }
 }

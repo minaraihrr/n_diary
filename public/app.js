@@ -87,6 +87,7 @@ async function getDiaries(year, date) {
 // 日記データ登録
 async function registDiaries(id) {
   // 登録データ取得
+  const container = document.getElementById('container');
   const card = container.querySelector(`.card[data-id="${id}"]`);
   const date = jpDisplayToIso(card.querySelector('span').textContent);
   const content = card.querySelector('textarea').value;
@@ -108,7 +109,7 @@ async function registDiaries(id) {
 //
 
 // 画面操作時日記データ取得
-function roadDiaries(){
+function loadDiaries(){
     let selectedYear = document.getElementById('year').value;
     let selectedDate = document.getElementById('date').value;
     getDiaries(selectedYear, selectedDate);
@@ -165,18 +166,18 @@ function main(){
 
   // イベント設定
   document.getElementById('year').addEventListener('change', (e) => {
-    roadDiaries();
+    loadDiaries();
   });
   document.getElementById('date').addEventListener('change', (e) => {
-    roadDiaries();
+    loadDiaries();
   });
   document.getElementById('prev').addEventListener('click', (e) => {
     moveDate(-1);
-    roadDiaries();
+    loadDiaries();
   });
   document.getElementById('next').addEventListener('click', (e) => {
     moveDate(1);
-    roadDiaries();
+    loadDiaries();
   });
 
   // 日記データ取得・表示
