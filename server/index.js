@@ -12,6 +12,23 @@ const __dirname = path.dirname(__filename);
 // publicフォルダ静的配信
 app.use(express.static(path.join(__dirname, '../public')));
 
+// 最古年データ取得
+app.get('/api/diaries/years/min', async (req, res) => {
+    // データ取得
+    try {
+        const result = await pool.query(`
+          SELECT MIN(EXTRACT(YEAR FROM entry_date)) AS min_year
+          FROM diaries
+        `);
+        res.json({ 
+          min_year: result.rows[0].min_year 
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database query failed' });
+    }
+});
+
 app.get('/api/diaries', async (req, res) => {
     const { date, year } = req.query;
 
