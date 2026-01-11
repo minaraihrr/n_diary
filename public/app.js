@@ -1,3 +1,6 @@
+const template = document.getElementById('entry-template');
+const container = document.getElementById('container');
+
 //
 // 日付フォーマット関連
 //
@@ -108,39 +111,21 @@ async function generateYearOptions(objYear, currentYear){
 // 日記データ操作
 //
 
-// 日記データ取得・表示
-async function getDiaries(year, date) {
-
-  // todo：関数化
-  // 年数分のテンプレート表示
-  const template = document.getElementById('entry-template');
-  const container = document.getElementById('container');
+// 年数分のテンプレート表示
+function renderTemplates(year){
   container.innerHTML = '';
   for (let i = 0; i < year; i++) {
     const clone = template.content.cloneNode(true);
     clone.querySelector('div').dataset.id = i;
     container.appendChild(clone);
   }
+}
 
-  // ボタンクリックイベント
-  container.addEventListener('click', async (e) => {
-    const btn = e.target.closest('button[data-action]');
-    if (!btn) return; // ボタン以外は無視
+// 日記データ取得・表示
+async function getDiaries(year, date) {
 
-    const card = btn.closest('.card[data-id]');
-    if (!card) return;
-
-    if (btn.dataset.action === 'edit'){
-        switchToEditMode(card);
-    } else if (btn.dataset.action === 'save'){
-        try {
-          await registDiaries(card.dataset.id);
-          switchToViewMode(card);
-        } catch (err) {
-          alert('保存に失敗しました');
-        }
-    }
-  });
+  // 年数分のテンプレート表示
+  renderTemplates(year);
 
   // APIから日記データ取得
   const res = await fetch(`/api/diaries?date=${date}&year=${year}`);
@@ -160,10 +145,17 @@ async function getDiaries(year, date) {
 // 日記データ登録
 async function registDiaries(id) {
   // 登録データ取得
-  const container = document.getElementById('container');
   const card = container.querySelector(`.card[data-id="${id}"]`);
   const date = jpDisplayToIso(card.querySelector('span').textContent);
   const content = card.querySelector('textarea').value;
+
+  // 入力チェック
+  if (content.length > 2000) {
+    alert(`本文は2000文字以内で入力してください`);
+    return;
+  }
+
+  // 登録
   const res = await fetch('/api/diaries', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -172,15 +164,44 @@ async function registDiaries(id) {
       content: content
     })
   }); 
-  if (!res.ok) { alert('書き込み失敗'); return; }
-  const result = await res.text(); 
-  
+  if (!res.ok) { 
+    alert('書き込み失敗'); 
+    return; 
+  }
+  alert('保存しました'); 
 }
 
 //
 // メイン処理
 //
+
+// テンプレート内イベント設定
+function setupDiaryClickHandler(){
+  container.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return; // ボタン以外は無視
+
+    const card = btn.closest('.card[data-id]');
+    if (!card) return;
+
+    if (btn.dataset.action === 'edit'){
+        switchToEditMode(card);
+    } else if (btn.dataset.action === 'save'){
+        try {
+          await registDiaries(card.dataset.id);
+          switchToViewMode(card);
+        } catch (err) {
+          alert('保存に失敗しました');
+        }
+    }
+  });
+}
+
+// メイン処理
 async function main(){
+  //
+  // 初期設定
+  //
   const date = formatDate(new Date());  // 今日の日付
   const year = 3;                       // 年数初期値
 
@@ -192,7 +213,11 @@ async function main(){
   await generateYearOptions(objYear, date.substring(0,4));
   document.getElementById('year').value = year;
 
+  //
   // イベント設定
+  //
+
+  // ヘッダーイベント設定
   document.getElementById('year').addEventListener('change', (e) => {
     loadDiaries();
   });
@@ -208,7 +233,12 @@ async function main(){
     loadDiaries();
   });
 
+  // テンプレート内イベント設定
+  setupDiaryClickHandler();
+
+  //
   // 日記データ取得・表示
+  //
   getDiaries(year, date);
 
 }
