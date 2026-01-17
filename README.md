@@ -1,6 +1,6 @@
 # N年日記
 指定した日付について、過去N年分の日記を一覧・編集できるWebアプリです。
-<img src="resources/demo.gif" width="200">
+<img src="resources/demo.gif" width="400">
 
 ## What is this
 いわゆる「N年日記」をWebアプリとして実装しています。  
