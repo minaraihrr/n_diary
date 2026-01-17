@@ -29,6 +29,7 @@ app.get('/api/diaries/years/min', async (req, res) => {
     }
 });
 
+// 日記データ取得
 app.get('/api/diaries', async (req, res) => {
     const { date, year } = req.query;
 
@@ -55,6 +56,7 @@ app.get('/api/diaries', async (req, res) => {
     }
 });
 
+// 日記データ登録・更新
 app.use(express.json());
 app.post('/api/diaries', async (req, res) => {
   const { date, content } = req.body;
@@ -76,6 +78,27 @@ app.post('/api/diaries', async (req, res) => {
     );
 
     res.json({ diary: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 日記データ削除
+app.delete('/api/diaries/:date', async (req, res) => {
+  const { date } = req.params;
+
+  // バリデーション
+  if (!date || typeof date !== 'string') {
+    return res.status(400).json({ error: 'entry_date is required (YYYY-MM-DD)' });
+  }
+
+  try {
+      const result = await pool.query(
+        `DELETE FROM diaries WHERE entry_date = $1::date
+        `,[date]
+    );
+    res.json({ deleted: result.rowCount });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
