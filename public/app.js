@@ -1,5 +1,7 @@
 const template = document.getElementById('entry-template');
 const container = document.getElementById('container');
+const dispDate = document.getElementById('date');
+const dispYear = document.getElementById('year');
 
 //
 // 日付フォーマット関連
@@ -42,18 +44,16 @@ function jpDisplayToIso(dateStr) {
 
 // 画面操作時日記データ取得
 function loadDiaries(){
-    let selectedYear = document.getElementById('year').value;
-    let selectedDate = document.getElementById('date').value;
+    let selectedYear = dispYear.value;
+    let selectedDate = dispDate.value;
     getDiaries(selectedYear, selectedDate);
 }
 
 // 戻る・進む処理
 function moveDate(diff){
-    let objDate = document.getElementById('date');
-    let date = new Date(objDate.value);
+    let date = new Date(dispDate.value);
     date.setDate(date.getDate() + diff);
-    objDate.value = formatDate(date);
-
+    dispDate.value = formatDate(date);
 }
 
 // 編集モードに切り替え
@@ -66,9 +66,11 @@ function switchToEditMode(card){
 
   // 表示制御
   p.classList.add('d-none');
-  ta.classList.remove('d-none');  
+  ta.classList.remove('d-none');
   card.querySelector('button[data-action="edit"]').classList.add('d-none');
   card.querySelector('button[data-action="save"]').classList.remove('d-none');  
+  card.querySelector('button[data-action="delete"]').classList.add('d-none');
+  card.querySelector('button[data-action="cancel"]').classList.remove('d-none');  
 }
 
 // 閲覧モードに切り替え
@@ -84,6 +86,22 @@ function switchToViewMode(card){
   ta.classList.add('d-none');  
   card.querySelector('button[data-action="edit"]').classList.remove('d-none');
   card.querySelector('button[data-action="save"]').classList.add('d-none');  
+  card.querySelector('button[data-action="cancel"]').classList.add('d-none');  
+  controlDeleteButton(card);
+
+}
+
+// 削除ボタン制御
+function controlDeleteButton(card){
+  const ta = card.querySelector('textarea'); 
+  if (ta.value.length === 0) {
+    // 本文が空の場合は削除ボタン非表示
+    card.querySelector('button[data-action="delete"]').classList.add('d-none');
+    return;
+  } else {
+    // 本文がある場合は削除ボタン表示
+    card.querySelector('button[data-action="delete"]').classList.remove('d-none');
+  } 
 }
 
 //
@@ -138,6 +156,9 @@ async function getDiaries(year, date) {
     card.querySelector('span').textContent = formatToJP(diary.entry_date);
     card.querySelector('p').textContent = diary.content ?? '';
     card.querySelector('textarea').value = diary.content ?? '';
+
+    // 削除ボタン制御
+    controlDeleteButton(card);
   });
   
 }
@@ -171,6 +192,31 @@ async function registDiaries(id) {
   alert('保存しました'); 
 }
 
+// 日記データ削除
+async function deleteDiaries(id) {
+  // 削除対象データ取得
+  const card = container.querySelector(`.card[data-id="${id}"]`);
+  const date = jpDisplayToIso(card.querySelector('span').textContent);
+  const p = card.querySelector('p');
+  const ta = card.querySelector('textarea');
+
+  // 削除
+  const res = await fetch(`/api/diaries/${date}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) { 
+    alert('削除失敗'); 
+    return; 
+  }
+  alert('削除しました'); 
+
+  // クリア
+  p.textContent = '';
+  ta.value = '';
+
+}
+
+
 //
 // メイン処理
 //
@@ -185,14 +231,35 @@ function setupDiaryClickHandler(){
     if (!card) return;
 
     if (btn.dataset.action === 'edit'){
+        // 編集ボタン
         switchToEditMode(card);
     } else if (btn.dataset.action === 'save'){
+        // 保存ボタン
         try {
           await registDiaries(card.dataset.id);
           switchToViewMode(card);
         } catch (err) {
           alert('保存に失敗しました');
         }
+    } else if (btn.dataset.action === 'delete'){
+        // 削除ボタン
+        if (!confirm('本当に削除しますか？')) return;
+        try {
+          await deleteDiaries(card.dataset.id);
+          switchToViewMode(card);
+        } catch (err) {
+          alert('削除に失敗しました');
+        }
+    } else if (btn.dataset.action === 'cancel'){
+        // キャンセルボタン
+        if (!confirm('保存せずに閉じますか？')) return;
+
+        // 元の内容に戻す
+        const p = card.querySelector('p');
+        const ta = card.querySelector('textarea');
+        ta.value = p.textContent || '';
+
+        switchToViewMode(card);
     }
   });
 }
@@ -206,11 +273,10 @@ async function main(){
   const year = 3;                       // 年数初期値
 
   // 日付初期値設定
-  document.getElementById('date').value = date;
+  dispDate.value = date;
 
   // 年数初期値設定
-  const objYear = document.getElementById('year');
-  await generateYearOptions(objYear, date.substring(0,4));
+  await generateYearOptions(dispYear, date.substring(0,4));
   document.getElementById('year').value = year;
 
   //
@@ -218,11 +284,18 @@ async function main(){
   //
 
   // ヘッダーイベント設定
-  document.getElementById('year').addEventListener('change', (e) => {
+  dispYear.addEventListener('change', (e) => {
     loadDiaries();
   });
-  document.getElementById('date').addEventListener('change', (e) => {
+  dispDate.addEventListener('blur', (e) => {
+    // todo: 入力チェック
     loadDiaries();
+  });
+  dispDate.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      dispDate.blur();
+    }
   });
   document.getElementById('prev').addEventListener('click', (e) => {
     moveDate(-1);
